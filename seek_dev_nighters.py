@@ -4,10 +4,10 @@ from datetime import datetime
 
 
 def load_attempts(url):
-    first_page = str(1)
-    pages = requests.get(url+first_page).json()['number_of_pages']
+    first_page_number = str(1)
+    pages = requests.get(url, params={'page': first_page_number}).json()['number_of_pages']
     for page in range(pages):
-        yield requests.get('{}{}'.format(url, str(page+1))).json()['records']
+        yield requests.get(url, params={'page': page+1}).json()['records']
 
 
 def get_midnighters(records_generator):
@@ -19,14 +19,16 @@ def get_midnighters(records_generator):
             username = record[idx]['username']
             utc_date_time = pytz.utc.localize(datetime.utcfromtimestamp(utc_timestamp))
             local_date_time = utc_date_time.astimezone(the_timezone)
-            hours = str(local_date_time)[11:13]
+            start_hours_idx = 11
+            end_hours_idx = 13
+            hours = str(local_date_time)[start_hours_idx:end_hours_idx]
             last_night_hour = 6
             if int(hours) < last_night_hour and username not in owls:
                 owls.append(username)
     return owls
 
 if __name__ == '__main__':
-    url = 'http://devman.org/api/challenges/solution_attempts/?page='
+    url = 'http://devman.org/api/challenges/solution_attempts/'
 
     for name in get_midnighters(load_attempts(url)):
         print(name)
