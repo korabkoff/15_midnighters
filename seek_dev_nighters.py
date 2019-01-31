@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 def load_attempts(url):
-    first_page_number = str(1)
+    first_page_number = 1
     pages = requests.get(url, params={'page': first_page_number}).json()['number_of_pages']
     for page in range(pages):
         yield requests.get(url, params={'page': page+1}).json()['records']
@@ -30,5 +30,5 @@ def get_midnighters(records_generator):
 if __name__ == '__main__':
     url = 'http://devman.org/api/challenges/solution_attempts/'
 
-    for name in get_midnighters(load_attempts(url)):
-        print(name)
+    for midnighter in get_midnighters(load_attempts(url)):
+        print(midnighter)
