@@ -1,31 +1,37 @@
 import requests
-import pytz
+from pytz import timezone
 from datetime import datetime
 
 
 def load_attempts(url):
-    first_page_number = 1
-    pages = requests.get(url, params={'page': first_page_number}).json()['number_of_pages']
-    for page in range(pages):
-        yield requests.get(url, params={'page': page+1}).json()['records']
+    page = 1
+    while True:
+        page += 1
+        response = requests.get(url, params={'page': page})
+        if response.status_code != 200:
+            break
+        yield from response.json()['records']
 
 
-def get_midnighters(records_generator):
+def get_midnighters(record_generator):
     owls = []
-    for record in records_generator:
-        for idx in range(len(record)):
-            utc_timestamp = record[idx]['timestamp']
-            the_timezone = pytz.timezone(record[idx]['timezone'])
-            username = record[idx]['username']
-            utc_date_time = pytz.utc.localize(datetime.utcfromtimestamp(utc_timestamp))
-            local_date_time = utc_date_time.astimezone(the_timezone)
-            start_hours_idx = 11
-            end_hours_idx = 13
-            hours = str(local_date_time)[start_hours_idx:end_hours_idx]
-            last_night_hour = 6
-            if int(hours) < last_night_hour and username not in owls:
-                owls.append(username)
-    return owls
+    for record in record_generator:
+
+        utc_timestamp = record['timestamp']
+        the_timezone = timezone(record['timezone'])
+        username = record['username']
+
+        local_date_time = datetime.fromtimestamp(utc_timestamp, tz=the_timezone)
+
+        start_hours_idx = 11
+        end_hours_idx = 13
+        hours = int(str(local_date_time)[start_hours_idx:end_hours_idx])
+
+        last_night_hour = 6
+        if hours < last_night_hour and username not in owls:
+            owls.append(username)
+            yield username
+
 
 if __name__ == '__main__':
     url = 'http://devman.org/api/challenges/solution_attempts/'
